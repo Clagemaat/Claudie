@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 
 from app.routers import design_requests, projects, tasks, users
 
@@ -8,6 +9,11 @@ app.include_router(users.router)
 app.include_router(projects.router)
 app.include_router(design_requests.router)
 app.include_router(tasks.router)
+
+
+@app.get("/", include_in_schema=False)
+def root() -> RedirectResponse:
+    return RedirectResponse(url="/docs")
 
 
 @app.get("/health")
