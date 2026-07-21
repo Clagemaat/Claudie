@@ -1,11 +1,12 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.core import Project
+from app.models.enums import OrderStatus
 from app.models.fulfillment import ItemCreationRequest, Order, OrderLine
 from app.schemas.fulfillment import (
     CompleteItemCreationRequest,
@@ -17,6 +18,17 @@ from app.schemas.fulfillment import (
 from app.services import fulfillment_workflow
 
 router = APIRouter(tags=["fulfillment"])
+
+
+@router.get("/orders", response_model=list[OrderOut])
+def list_orders(
+    status: OrderStatus | None = Query(default=None),
+    db: Session = Depends(get_db),
+) -> list[Order]:
+    query = select(Order)
+    if status is not None:
+        query = query.where(Order.status == status)
+    return db.scalars(query.order_by(Order.created_at)).all()
 
 
 @router.post("/projects/{project_id}/orders", response_model=OrderOut)

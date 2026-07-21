@@ -21,6 +21,11 @@ def create_customer(payload: CustomerCreate, db: Session = Depends(get_db)) -> C
     return customer
 
 
+@router.get("/customers", response_model=list[CustomerOut])
+def list_customers(db: Session = Depends(get_db)) -> list[Customer]:
+    return db.scalars(select(Customer)).all()
+
+
 @router.post("/customers/{customer_id}/retailers", response_model=RetailerOut)
 def create_retailer(
     customer_id: uuid.UUID, payload: RetailerCreate, db: Session = Depends(get_db)
@@ -50,6 +55,11 @@ def create_project(payload: ProjectCreate, db: Session = Depends(get_db)) -> Pro
     db.commit()
     db.refresh(project)
     return project
+
+
+@router.get("/projects", response_model=list[ProjectOut])
+def list_projects(db: Session = Depends(get_db)) -> list[Project]:
+    return db.scalars(select(Project).order_by(Project.created_at)).all()
 
 
 @router.get("/projects/{project_id}", response_model=ProjectOut)

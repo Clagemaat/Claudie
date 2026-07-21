@@ -1,12 +1,13 @@
 import uuid
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.core import Project
 from app.models.design import Comment, DesignRequest, ReferenceMaterial, TemplateVersion
+from app.models.enums import DesignRequestStatus
 from app.schemas.design import (
     DesignRequestCreate,
     DesignRequestDetailOut,
@@ -28,6 +29,19 @@ def _get_design_request(db: Session, design_request_id: uuid.UUID) -> DesignRequ
     if dr is None:
         raise HTTPException(status_code=404, detail="design request not found")
     return dr
+
+
+@router.get("/design-requests", response_model=list[DesignRequestOut])
+def list_design_requests(
+    status: DesignRequestStatus | None = Query(default=None),
+    db: Session = Depends(get_db),
+) -> list[DesignRequest]:
+    """The consolidated overview for Traffic Manager - every design
+    request and its status, not just the caller's own to-do list."""
+    query = select(DesignRequest)
+    if status is not None:
+        query = query.where(DesignRequest.status == status)
+    return db.scalars(query.order_by(DesignRequest.created_at)).all()
 
 
 @router.post("/projects/{project_id}/design-requests", response_model=DesignRequestOut)
