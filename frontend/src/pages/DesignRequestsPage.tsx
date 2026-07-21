@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { apiGet, apiPost, uploadFile } from '../api'
+import { apiGet, apiPost, apiUpload, uploadFile } from '../api'
 import { useOptions } from '../useOptions'
 import { hasAnyRole, useSession } from '../session'
 import type {
@@ -133,6 +133,8 @@ function DesignRequestList({ onOpen }: { onOpen: (id: string) => void }) {
   )
 }
 
+const MAX_MATERIALS = 4
+
 function CreateDesignRequestForm({ onCreated }: { onCreated: () => void }) {
   const { user } = useSession()
   const projectOptions = useOptions<Project>('/projects', (p) => p.name)
@@ -144,6 +146,10 @@ function CreateDesignRequestForm({ onCreated }: { onCreated: () => void }) {
   const [retailerOptions, setRetailerOptions] = useState<{ value: string; label: string }[]>([])
   const [deadline, setDeadline] = useState('')
   const [colors, setColors] = useState('')
+  const [brief, setBrief] = useState('')
+  const [productSize, setProductSize] = useState('')
+  const [materials, setMaterials] = useState<string[]>(Array(MAX_MATERIALS).fill(''))
+  const [files, setFiles] = useState<File[]>([])
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -159,20 +165,32 @@ function CreateDesignRequestForm({ onCreated }: { onCreated: () => void }) {
     )
   }, [projectId])
 
+  const setMaterialAt = (index: number, value: string) =>
+    setMaterials((m) => m.map((existing, i) => (i === index ? value : existing)))
+
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     if (!projectId || !user) return
     setSaving(true)
     setError(null)
     try {
-      await apiPost(`/projects/${projectId}/design-requests`, {
+      const created = await apiPost<DesignRequest>(`/projects/${projectId}/design-requests`, {
         subtype,
         product_type_id: productTypeId || undefined,
         retailer_id: retailerId || undefined,
         requested_deadline: deadline || undefined,
         requested_colors: colors ? colors.split(',').map((c) => c.trim()).filter(Boolean) : undefined,
+        brief: brief || undefined,
+        product_size: productSize || undefined,
+        materials: materials.map((m) => m.trim()).filter(Boolean) || undefined,
         created_by_id: user.id,
       })
+      for (const file of files) {
+        const form = new FormData()
+        form.append('uploaded_by_id', user.id)
+        form.append('file', file)
+        await apiUpload(`/design-requests/${created.id}/reference-materials`, form)
+      }
       onCreated()
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
@@ -182,7 +200,7 @@ function CreateDesignRequestForm({ onCreated }: { onCreated: () => void }) {
   }
 
   return (
-    <form onSubmit={submit} className="entity-form">
+    <form onSubmit={submit} className="entity-form" style={{ flexDirection: 'column', alignItems: 'stretch', maxWidth: 560 }}>
       <label>
         <span>Project</span>
         <select value={projectId} onChange={(e) => setProjectId(e.target.value)} required>
@@ -237,7 +255,47 @@ function CreateDesignRequestForm({ onCreated }: { onCreated: () => void }) {
           placeholder="Red, Blue, Forest Green"
         />
       </label>
-      <button type="submit" disabled={saving}>
+      <label>
+        <span>Product size</span>
+        <input
+          type="text"
+          value={productSize}
+          onChange={(e) => setProductSize(e.target.value)}
+          placeholder="e.g. Medium (M)"
+        />
+      </label>
+      <label>
+        <span>Materials (up to {MAX_MATERIALS})</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {materials.map((m, i) => (
+            <input
+              key={i}
+              type="text"
+              value={m}
+              onChange={(e) => setMaterialAt(i, e.target.value)}
+              placeholder={`Material ${i + 1}`}
+            />
+          ))}
+        </div>
+      </label>
+      <label>
+        <span>Design brief</span>
+        <textarea
+          value={brief}
+          onChange={(e) => setBrief(e.target.value)}
+          rows={5}
+          placeholder="Describe the creative direction, must-haves, tone, references, etc."
+        />
+      </label>
+      <label>
+        <span>Attachments (logos, brand assets, inspiration, ...)</span>
+        <input
+          type="file"
+          multiple
+          onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
+        />
+      </label>
+      <button type="submit" disabled={saving} style={{ alignSelf: 'start', marginTop: 12 }}>
         {saving ? 'Saving…' : 'Create'}
       </button>
       {error && <p className="error">{error}</p>}
@@ -294,6 +352,18 @@ function DesignRequestDetail({ id, onBack }: { id: string; onBack: () => void })
           <tr>
             <th>Requested colors</th>
             <td>{dr.requested_colors?.join(', ') ?? '—'}</td>
+          </tr>
+          <tr>
+            <th>Product size</th>
+            <td>{dr.product_size ?? '—'}</td>
+          </tr>
+          <tr>
+            <th>Materials</th>
+            <td>{dr.materials?.join(', ') ?? '—'}</td>
+          </tr>
+          <tr>
+            <th>Design brief</th>
+            <td style={{ whiteSpace: 'pre-wrap' }}>{dr.brief ?? '—'}</td>
           </tr>
         </tbody>
       </table>

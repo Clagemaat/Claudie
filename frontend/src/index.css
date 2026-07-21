@@ -120,7 +120,8 @@ body {
 }
 
 .entity-form input,
-.entity-form select {
+.entity-form select,
+.entity-form textarea {
   padding: 6px 8px;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -128,6 +129,11 @@ body {
   color: var(--text);
   font-size: 14px;
   min-width: 160px;
+}
+
+.entity-form textarea {
+  font-family: inherit;
+  resize: vertical;
 }
 
 .entity-form button {

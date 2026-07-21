@@ -2,7 +2,7 @@ import uuid
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from app.models.enums import (
     DesignRequestStatus,
@@ -18,7 +18,17 @@ class DesignRequestCreate(BaseModel):
     retailer_id: uuid.UUID | None = None
     requested_deadline: date | None = None
     requested_colors: list[str] | None = None
+    brief: str | None = None
+    product_size: str | None = None
+    materials: list[str] | None = None
     created_by_id: uuid.UUID
+
+    @field_validator("materials")
+    @classmethod
+    def _max_four_materials(cls, v: list[str] | None) -> list[str] | None:
+        if v is not None and len(v) > 4:
+            raise ValueError("at most 4 materials are allowed")
+        return v
 
 
 class TriageRequest(BaseModel):
@@ -87,6 +97,9 @@ class DesignRequestOut(BaseModel):
     retailer_id: uuid.UUID | None
     requested_deadline: date | None
     requested_colors: list[str] | None
+    brief: str | None
+    product_size: str | None
+    materials: list[str] | None
     design_project_number: str | None
     lead_designer_id: uuid.UUID | None
     dtp_designer_id: uuid.UUID | None
