@@ -15,6 +15,13 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
+      // Uploaded reference materials are served directly from the
+      // backend at this path (see app.main) - proxy it too so links to
+      // them resolve in dev, same as they do same-origin in prod.
+      '/files': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
     },
   },
 })

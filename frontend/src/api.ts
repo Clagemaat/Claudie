@@ -1,4 +1,7 @@
-const BASE = '/api'
+// Dev: the Vite dev server proxies '/api' to the backend on :8000 (see
+// vite.config.ts). Prod: frontend and backend are served from the same
+// origin by the same process (see Dockerfile), so requests are unprefixed.
+const BASE = import.meta.env.DEV ? '/api' : ''
 
 async function extractError(res: Response): Promise<string> {
   try {
