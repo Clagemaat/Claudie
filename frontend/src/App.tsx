@@ -7,6 +7,7 @@ import { DesignRequestsPage } from './pages/DesignRequestsPage'
 import { PricingRequestsPage } from './pages/PricingRequestsPage'
 import { OrdersPage } from './pages/OrdersPage'
 import { ItemCreationDetail } from './pages/ItemCreationDetail'
+import { CustomersPage } from './pages/CustomersPage'
 import { AdminPage } from './pages/AdminPage'
 import { SessionContext, clearCurrentUserId, hasAnyRole, loadCurrentUserId } from './session'
 import type { Role, User } from './types'
@@ -14,6 +15,7 @@ import type { Role, User } from './types'
 type SectionKey =
   | 'my-tasks'
   | 'projects'
+  | 'customers'
   | 'design-requests'
   | 'pricing-requests'
   | 'orders'
@@ -23,6 +25,7 @@ type SectionKey =
 const NAV: { key: SectionKey; label: string; roles: Role[] | null }[] = [
   { key: 'my-tasks', label: 'My Tasks', roles: null },
   { key: 'projects', label: 'Projects', roles: ['sales'] },
+  { key: 'customers', label: 'Customers', roles: ['sales', 'admin'] },
   {
     key: 'design-requests',
     label: 'Design Requests',
@@ -120,6 +123,7 @@ function App() {
             />
           )}
           {active === 'projects' && <ProjectsPage />}
+          {active === 'customers' && <CustomersPage />}
           {active === 'design-requests' && (
             <DesignRequestsPage
               focusId={focusDesignRequestId}

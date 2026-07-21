@@ -35,6 +35,11 @@ class RetailerCreate(BaseModel):
     name: str
 
 
+class RetailerCreateWithCustomer(BaseModel):
+    customer_id: uuid.UUID
+    name: str
+
+
 class RetailerOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

@@ -7,7 +7,13 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.core import Customer, Project, Retailer
 from app.schemas.project import ProjectCreate, ProjectOut
-from app.schemas.user import CustomerCreate, CustomerOut, RetailerCreate, RetailerOut
+from app.schemas.user import (
+    CustomerCreate,
+    CustomerOut,
+    RetailerCreate,
+    RetailerCreateWithCustomer,
+    RetailerOut,
+)
 
 router = APIRouter(tags=["projects"])
 
@@ -42,6 +48,27 @@ def create_retailer(
 @router.get("/customers/{customer_id}/retailers", response_model=list[RetailerOut])
 def list_retailers(customer_id: uuid.UUID, db: Session = Depends(get_db)) -> list[Retailer]:
     return db.scalars(select(Retailer).where(Retailer.customer_id == customer_id)).all()
+
+
+@router.post("/retailers", response_model=RetailerOut)
+def create_retailer_flat(
+    payload: RetailerCreateWithCustomer, db: Session = Depends(get_db)
+) -> Retailer:
+    """Same as create_retailer, but for the standalone Retailers screen -
+    the customer is picked from a dropdown there instead of being implied
+    by which customer's page you're already on."""
+    if db.get(Customer, payload.customer_id) is None:
+        raise HTTPException(status_code=404, detail="customer not found")
+    retailer = Retailer(customer_id=payload.customer_id, name=payload.name)
+    db.add(retailer)
+    db.commit()
+    db.refresh(retailer)
+    return retailer
+
+
+@router.get("/retailers", response_model=list[RetailerOut])
+def list_retailers_flat(db: Session = Depends(get_db)) -> list[Retailer]:
+    return db.scalars(select(Retailer)).all()
 
 
 @router.post("/projects", response_model=ProjectOut)
