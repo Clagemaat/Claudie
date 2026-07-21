@@ -33,6 +33,12 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db)) -> UserOut:
     return _to_user_out(user)
 
 
+@router.get("", response_model=list[UserOut])
+def list_users(db: Session = Depends(get_db)) -> list[UserOut]:
+    users = db.scalars(select(User).order_by(User.name)).all()
+    return [_to_user_out(user) for user in users]
+
+
 @router.get("/{user_id}", response_model=UserOut)
 def get_user(user_id: uuid.UUID, db: Session = Depends(get_db)) -> UserOut:
     user = db.get(User, user_id)

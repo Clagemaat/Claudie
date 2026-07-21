@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -17,6 +18,16 @@ from app.routers import (
 )
 
 app = FastAPI(title="Claudie Workflow API")
+
+# No auth exists yet, so this is permissive by design - an internal admin
+# tool in a private dev environment. The frontend's Vite dev server proxies
+# API calls same-origin anyway, so this is defensive/for direct access.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(users.router)
 app.include_router(projects.router)

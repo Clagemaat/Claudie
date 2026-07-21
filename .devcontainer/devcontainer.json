@@ -2,19 +2,23 @@
   "name": "Claudie Workflow Backend",
   "dockerComposeFile": "docker-compose.yml",
   "service": "app",
-  "workspaceFolder": "/workspace/backend",
-  "forwardPorts": [8000],
+  "workspaceFolder": "/workspace",
+  "forwardPorts": [8000, 5173],
   "portsAttributes": {
     "8000": {
       "label": "FastAPI (Swagger UI at /docs)",
+      "onAutoForward": "notify"
+    },
+    "5173": {
+      "label": "Admin UI (React)",
       "onAutoForward": "openBrowser"
     }
   },
-  "postCreateCommand": "pip install -r requirements.txt && alembic upgrade head",
-  "postStartCommand": "bash -c 'nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload > /tmp/uvicorn.log 2>&1 &'",
+  "postCreateCommand": "pip install -r backend/requirements.txt && cd backend && alembic upgrade head && cd ../frontend && npm install",
+  "postStartCommand": "bash -c 'cd /workspace/backend && nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload > /tmp/uvicorn.log 2>&1 & cd /workspace/frontend && nohup npm run dev -- --port 5173 > /tmp/vite.log 2>&1 &'",
   "customizations": {
     "vscode": {
-      "extensions": ["ms-python.python"]
+      "extensions": ["ms-python.python", "dbaeumer.vscode-eslint"]
     }
   }
 }
