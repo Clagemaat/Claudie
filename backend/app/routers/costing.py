@@ -1,12 +1,13 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.core import Project
 from app.models.costing import Factory, PricingRequest, QuoteLine
+from app.models.enums import PricingRequestStatus
 from app.schemas.costing import (
     AddLineRequest,
     ClaimRequest,
@@ -51,6 +52,19 @@ def _get_line(db: Session, line_id: uuid.UUID) -> QuoteLine:
     if line is None:
         raise HTTPException(status_code=404, detail="quote line not found")
     return line
+
+
+@router.get("/pricing-requests", response_model=list[PricingRequestOut])
+def list_pricing_requests(
+    status: PricingRequestStatus | None = Query(default=None),
+    db: Session = Depends(get_db),
+) -> list[PricingRequest]:
+    """The consolidated overview: every quote, who (if anyone) has claimed
+    it, and its status - not just the caller's own to-do list."""
+    query = select(PricingRequest)
+    if status is not None:
+        query = query.where(PricingRequest.status == status)
+    return db.scalars(query.order_by(PricingRequest.created_at)).all()
 
 
 @router.post("/projects/{project_id}/pricing-requests", response_model=PricingRequestOut)
