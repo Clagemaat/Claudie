@@ -5,11 +5,20 @@ import { MyTasksPage } from './pages/MyTasksPage'
 import { ProjectsPage } from './pages/ProjectsPage'
 import { DesignRequestsPage } from './pages/DesignRequestsPage'
 import { PricingRequestsPage } from './pages/PricingRequestsPage'
+import { OrdersPage } from './pages/OrdersPage'
+import { ItemCreationDetail } from './pages/ItemCreationDetail'
 import { AdminPage } from './pages/AdminPage'
 import { SessionContext, clearCurrentUserId, hasAnyRole, loadCurrentUserId } from './session'
 import type { Role, User } from './types'
 
-type SectionKey = 'my-tasks' | 'projects' | 'design-requests' | 'pricing-requests' | 'admin'
+type SectionKey =
+  | 'my-tasks'
+  | 'projects'
+  | 'design-requests'
+  | 'pricing-requests'
+  | 'orders'
+  | 'item-creation'
+  | 'admin'
 
 const NAV: { key: SectionKey; label: string; roles: Role[] | null }[] = [
   { key: 'my-tasks', label: 'My Tasks', roles: null },
@@ -24,6 +33,7 @@ const NAV: { key: SectionKey; label: string; roles: Role[] | null }[] = [
     label: 'Pricing Requests',
     roles: ['sales', 'costing', 'sales_director'],
   },
+  { key: 'orders', label: 'Orders', roles: ['sales'] },
   { key: 'admin', label: 'Admin', roles: ['admin'] },
 ]
 
@@ -33,6 +43,7 @@ function App() {
   const [active, setActive] = useState<SectionKey>('my-tasks')
   const [focusDesignRequestId, setFocusDesignRequestId] = useState<string | null>(null)
   const [focusPricingRequestId, setFocusPricingRequestId] = useState<string | null>(null)
+  const [focusItemCreationId, setFocusItemCreationId] = useState<string | null>(null)
 
   useEffect(() => {
     const id = loadCurrentUserId()
@@ -62,6 +73,11 @@ function App() {
   const openPricingRequest = (id: string) => {
     setFocusPricingRequestId(id)
     setActive('pricing-requests')
+  }
+
+  const openItemCreationRequest = (id: string) => {
+    setFocusItemCreationId(id)
+    setActive('item-creation')
   }
 
   const signOut = () => {
@@ -97,7 +113,11 @@ function App() {
         </nav>
         <main className="content">
           {active === 'my-tasks' && (
-            <MyTasksPage onOpenDesignRequest={openDesignRequest} onOpenPricingRequest={openPricingRequest} />
+            <MyTasksPage
+              onOpenDesignRequest={openDesignRequest}
+              onOpenPricingRequest={openPricingRequest}
+              onOpenItemCreationRequest={openItemCreationRequest}
+            />
           )}
           {active === 'projects' && <ProjectsPage />}
           {active === 'design-requests' && (
@@ -110,6 +130,16 @@ function App() {
             <PricingRequestsPage
               focusId={focusPricingRequestId}
               onFocusHandled={() => setFocusPricingRequestId(null)}
+            />
+          )}
+          {active === 'orders' && <OrdersPage />}
+          {active === 'item-creation' && focusItemCreationId && (
+            <ItemCreationDetail
+              id={focusItemCreationId}
+              onBack={() => {
+                setFocusItemCreationId(null)
+                setActive('my-tasks')
+              }}
             />
           )}
           {active === 'admin' && <AdminPage />}
