@@ -82,6 +82,76 @@ export interface EscalationRule extends WithId {
   notify_message_template: string
 }
 
+export interface Task extends WithId {
+  entity_type: string
+  entity_id: string
+  step_name: string
+  assigned_to_user_id: string | null
+  assigned_to_role: Role | null
+  status: 'open' | 'on_hold' | 'done'
+  created_at: string
+  due_at: string
+  hold_reason: string | null
+  hold_started_at: string | null
+  remaining_on_hold: string | null
+  completed_at: string | null
+}
+
+export interface Project extends WithId {
+  name: string
+  customer_id: string
+  created_by_id: string
+  status: 'open' | 'closed'
+  created_at: string
+}
+
+export type DesignRequestSubtype = 'presentation' | 'template' | 'mockup'
+export type DesignRequestStatus = 'submitted' | 'triaged' | 'in_progress' | 'in_review' | 'approved' | 'rejected'
+
+export interface DesignRequest extends WithId {
+  project_id: string
+  subtype: DesignRequestSubtype
+  product_type_id: string | null
+  retailer_id: string | null
+  requested_deadline: string | null
+  requested_colors: string[] | null
+  design_project_number: string | null
+  lead_designer_id: string | null
+  dtp_designer_id: string | null
+  status: DesignRequestStatus
+  leading_pricing_request_id: string | null
+  created_by_id: string
+  created_at: string
+  updated_at: string
+}
+
+export interface TemplateVersion extends WithId {
+  version_number: string
+  pdf_url: string
+  status: 'draft' | 'final_ready'
+  trigger_reason: 'initial' | 'customer_change' | 'mistake_fix' | null
+  created_at: string
+}
+
+export interface Comment extends WithId {
+  author_id: string
+  body: string
+  created_at: string
+}
+
+export interface ReferenceMaterial extends WithId {
+  file_url: string
+  original_filename: string
+  uploaded_by_id: string
+  created_at: string
+}
+
+export interface DesignRequestDetail extends DesignRequest {
+  versions: TemplateVersion[]
+  comments: Comment[]
+  reference_materials: ReferenceMaterial[]
+}
+
 // Known (entity_type, step_name) pairs a Task can actually be created with -
 // keeping this a dropdown (rather than free text) avoids SLA/escalation
 // rules silently never matching anything due to a typo.

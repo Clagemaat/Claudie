@@ -28,3 +28,17 @@ export async function apiPost<T>(path: string, body: unknown): Promise<T> {
   if (!res.ok) throw new Error(await extractError(res))
   return res.json() as Promise<T>
 }
+
+export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, { method: 'POST', body: form })
+  if (!res.ok) throw new Error(await extractError(res))
+  return res.json() as Promise<T>
+}
+
+/** Uploads a file via the generic /uploads endpoint and returns its URL. */
+export async function uploadFile(file: File): Promise<string> {
+  const form = new FormData()
+  form.append('file', file)
+  const { url } = await apiUpload<{ url: string }>('/uploads', form)
+  return url
+}

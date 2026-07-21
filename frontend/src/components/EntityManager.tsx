@@ -30,7 +30,10 @@ interface EntityManagerProps<T extends WithId> {
   createPath: string
   fields: FieldConfig[]
   columns: ColumnConfig<T>[]
-  onCreated?: () => void
+  onCreated?: (created: T) => void
+  /** Extra payload fields not shown as form inputs (e.g. created_by_id
+   * derived from the signed-in user rather than typed by them). */
+  extraPayload?: Record<string, unknown>
 }
 
 export function EntityManager<T extends WithId>({
@@ -40,6 +43,7 @@ export function EntityManager<T extends WithId>({
   fields,
   columns,
   onCreated,
+  extraPayload,
 }: EntityManagerProps<T>) {
   const [rows, setRows] = useState<T[]>([])
   const [form, setForm] = useState<Record<string, string | string[]>>({})
@@ -72,7 +76,7 @@ export function EntityManager<T extends WithId>({
     setError(null)
     setLoading(true)
     try {
-      const payload: Record<string, unknown> = {}
+      const payload: Record<string, unknown> = { ...extraPayload }
       for (const field of fields) {
         const raw = form[field.name]
         if (raw === undefined || raw === '' || (Array.isArray(raw) && raw.length === 0)) continue
@@ -87,10 +91,10 @@ export function EntityManager<T extends WithId>({
           payload[field.name] = raw
         }
       }
-      await apiPost(createPath, payload)
+      const created = await apiPost<T>(createPath, payload)
       setForm({})
       await load()
-      onCreated?.()
+      onCreated?.(created)
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
