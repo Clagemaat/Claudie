@@ -187,3 +187,188 @@ td button {
 td button:hover {
   border-color: var(--accent);
 }
+
+/* Login page */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-box {
+  width: 380px;
+  max-width: 90vw;
+}
+
+.login-box h1 {
+  font-size: 28px;
+  margin: 0 0 4px;
+}
+
+.login-subtitle {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin: 0 0 16px;
+}
+
+.login-box input[type='text'] {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.login-user-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.login-user-list button {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: 2px;
+  text-align: left;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.login-user-list button:hover {
+  border-color: var(--accent);
+}
+
+.login-user-list span {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.login-roles {
+  font-style: italic;
+}
+
+.login-empty {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+/* Signed-in-as box in sidebar */
+.signed-in-as {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  margin-bottom: 16px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.signed-in-as span {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.signed-in-as button {
+  margin-top: 6px;
+  align-self: start;
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0;
+}
+
+/* Admin sub-nav */
+.admin-layout {
+  display: flex;
+  gap: 24px;
+}
+
+.admin-subnav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 180px;
+  flex-shrink: 0;
+}
+
+.admin-subnav button {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 6px 8px;
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.admin-subnav button:hover {
+  background: var(--bg-alt);
+}
+
+.admin-subnav button.active {
+  background: var(--accent);
+  color: white;
+}
+
+.admin-content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Design request detail */
+.detail-table {
+  margin-bottom: 16px;
+}
+
+.detail-table th {
+  width: 180px;
+  color: var(--text-muted);
+  font-weight: 500;
+  vertical-align: top;
+}
+
+.action-form {
+  flex-direction: column;
+  align-items: stretch;
+  max-width: 420px;
+}
+
+.action-form h4 {
+  margin: 0 0 4px;
+}
+
+.task-hold-row {
+  display: flex;
+  gap: 6px;
+}
+
+.task-hold-row input {
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+}

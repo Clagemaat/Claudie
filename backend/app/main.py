@@ -9,6 +9,7 @@ from app.config import settings
 from app.routers import (
     costing,
     design_requests,
+    files,
     fulfillment,
     ops,
     projects,
@@ -37,6 +38,7 @@ app.include_router(reference_data.router)
 app.include_router(costing.router)
 app.include_router(fulfillment.router)
 app.include_router(ops.router)
+app.include_router(files.router)
 
 # Uploaded reference materials (see app.services.file_storage) are served
 # back from here - swap for a real object store URL scheme later.
