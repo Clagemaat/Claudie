@@ -12,6 +12,7 @@ from app.models.enums import (
 )
 from app.schemas.design import (
     DesignRequestCreate,
+    ReopenForRevisionRequest,
     ReviewDecisionRequest,
     SubmitForReviewRequest,
     TriageRequest,
@@ -125,6 +126,40 @@ def submit_for_review(
     create_task(db, ENTITY_TYPE, dr.id, "review", assigned_to_role=Role.TRAFFIC_MANAGER)
     audit(
         db, ENTITY_TYPE, dr.id, "submitted_for_review", payload.actor_id,
+        before=before, after={"status": dr.status.value},
+    )
+
+    db.commit()
+    db.refresh(dr)
+    return dr
+
+
+def reopen_for_revision(
+    db: Session, dr: DesignRequest, payload: ReopenForRevisionRequest
+) -> DesignRequest:
+    """The post-pricing "customer wants a change" / "someone spotted a
+    mistake" case - re-enters at In Progress with the same design project #,
+    lead designer, and DTP designer (no re-triage). The actual version
+    trigger_reason (customer_change vs mistake_fix) is recorded when the
+    DTP designer submits the revised work, same as the initial version."""
+    if dr.status != DesignRequestStatus.APPROVED:
+        raise WorkflowError(f"cannot reopen a request in status {dr.status.value}")
+
+    is_requester = dr.created_by_id == payload.actor_id
+    is_traffic_manager = user_has_role(db, payload.actor_id, Role.TRAFFIC_MANAGER)
+    if not (is_requester or is_traffic_manager):
+        raise WorkflowError("actor must be the original requester or a traffic manager")
+
+    before = {"status": dr.status.value}
+    dr.status = DesignRequestStatus.IN_PROGRESS
+
+    db.add(Comment(
+        entity_type=ENTITY_TYPE, entity_id=dr.id,
+        author_id=payload.actor_id, body=payload.reason,
+    ))
+    create_task(db, ENTITY_TYPE, dr.id, "dtp_work", assigned_to_user_id=dr.dtp_designer_id)
+    audit(
+        db, ENTITY_TYPE, dr.id, "reopened_for_revision", payload.actor_id,
         before=before, after={"status": dr.status.value},
     )
 

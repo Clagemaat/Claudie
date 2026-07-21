@@ -42,6 +42,11 @@ class ReviewDecisionRequest(BaseModel):
     comment: str | None = None
 
 
+class ReopenForRevisionRequest(BaseModel):
+    actor_id: uuid.UUID
+    reason: str
+
+
 class TemplateVersionOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
