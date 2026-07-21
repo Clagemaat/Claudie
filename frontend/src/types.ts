@@ -152,6 +152,70 @@ export interface DesignRequestDetail extends DesignRequest {
   reference_materials: ReferenceMaterial[]
 }
 
+export type PricingRequestSourceType = 'template' | 'questions'
+export type PricingRequestStatus = 'open' | 'in_progress' | 'complete'
+export type QuoteLineStatus = 'requested' | 'priced'
+
+export interface PricingRequest extends WithId {
+  project_id: string
+  source_type: PricingRequestSourceType
+  template_version_id: string | null
+  product_type_id: string | null
+  questions: Record<string, unknown> | null
+  requested_delivery_date: string | null
+  requested_quote_validity_until: string | null
+  assigned_costing_user_id: string | null
+  status: PricingRequestStatus
+  created_by_id: string
+  created_at: string
+  updated_at: string
+}
+
+export interface QuoteLine extends WithId {
+  pricing_request_id: string
+  color: string
+  size: string
+  quantity: number
+  production_location_id: string
+  delivery_location_id: string
+  status: QuoteLineStatus
+  factory_id: string | null
+  hs_code: string | null
+  purchase_price: number | null
+  purchase_currency: string | null
+  fx_rate_to_eur: number | null
+  box_width_cm: number | null
+  box_length_cm: number | null
+  box_height_cm: number | null
+  box_qty: number | null
+  volume_cbm: number | null
+  freight_cost: number | null
+  duty_cost: number | null
+  handling_cost: number | null
+  landed_cost: number | null
+  margin_pct: number | null
+  sell_price: number | null
+}
+
+export interface PricingRequestDetail extends PricingRequest {
+  lines: QuoteLine[]
+}
+
+export interface FactoryQuoteOption extends WithId {
+  quote_line_id: string
+  factory_id: string
+  quoted_price: number
+  currency: string
+  notes: string | null
+  is_selected: boolean
+  landed_cost: number | null
+}
+
+export interface MarginRecommendation {
+  recommended_margin_pct: number | null
+  based_on_count: number
+}
+
 // Known (entity_type, step_name) pairs a Task can actually be created with -
 // keeping this a dropdown (rather than free text) avoids SLA/escalation
 // rules silently never matching anything due to a typo.

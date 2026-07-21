@@ -5,6 +5,7 @@ import type { Task } from '../types'
 
 interface MyTasksPageProps {
   onOpenDesignRequest?: (id: string) => void
+  onOpenPricingRequest?: (id: string) => void
 }
 
 function formatDue(task: Task): string {
@@ -17,7 +18,7 @@ function formatDue(task: Task): string {
   return overdue ? `Overdue by ~${hours}h` : `Due in ~${hours}h`
 }
 
-export function MyTasksPage({ onOpenDesignRequest }: MyTasksPageProps) {
+export function MyTasksPage({ onOpenDesignRequest, onOpenPricingRequest }: MyTasksPageProps) {
   const { user } = useSession()
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
@@ -92,6 +93,10 @@ export function MyTasksPage({ onOpenDesignRequest }: MyTasksPageProps) {
                 <td>
                   {task.entity_type === 'design_request' && onOpenDesignRequest ? (
                     <button type="button" onClick={() => onOpenDesignRequest(task.entity_id)}>
+                      {label(task)}
+                    </button>
+                  ) : task.entity_type === 'pricing_request' && onOpenPricingRequest ? (
+                    <button type="button" onClick={() => onOpenPricingRequest(task.entity_id)}>
                       {label(task)}
                     </button>
                   ) : (
