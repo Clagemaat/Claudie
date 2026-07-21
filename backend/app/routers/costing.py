@@ -6,13 +6,15 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.core import Project
-from app.models.costing import Factory, PricingRequest, QuoteLine
+from app.models.costing import Factory, FactoryQuoteOption, PricingRequest, QuoteLine
 from app.models.enums import PricingRequestStatus
 from app.schemas.costing import (
     AddLineRequest,
     ClaimRequest,
     FactoryCreate,
     FactoryOut,
+    FactoryQuoteOptionCreate,
+    FactoryQuoteOptionOut,
     MarginRecommendationOut,
     OverrideLineRequest,
     PriceLineRequest,
@@ -52,6 +54,24 @@ def _get_line(db: Session, line_id: uuid.UUID) -> QuoteLine:
     if line is None:
         raise HTTPException(status_code=404, detail="quote line not found")
     return line
+
+
+def _to_option_out(
+    db: Session, pr: PricingRequest, line: QuoteLine, option: FactoryQuoteOption
+) -> FactoryQuoteOptionOut:
+    landed_cost = costing_workflow.estimate_option_landed_cost(
+        db, pr, line, float(option.quoted_price), option.currency
+    )
+    return FactoryQuoteOptionOut(
+        id=option.id,
+        quote_line_id=option.quote_line_id,
+        factory_id=option.factory_id,
+        quoted_price=option.quoted_price,
+        currency=option.currency,
+        notes=option.notes,
+        is_selected=option.is_selected,
+        landed_cost=landed_cost,
+    )
 
 
 @router.get("/pricing-requests", response_model=list[PricingRequestOut])
@@ -110,6 +130,62 @@ def add_line(
         return costing_workflow.add_line(db, pr, payload)
     except costing_workflow.WorkflowError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post(
+    "/pricing-requests/{pricing_request_id}/lines/{line_id}/quote-options",
+    response_model=FactoryQuoteOptionOut,
+)
+def add_quote_option(
+    pricing_request_id: uuid.UUID,
+    line_id: uuid.UUID,
+    payload: FactoryQuoteOptionCreate,
+    db: Session = Depends(get_db),
+) -> FactoryQuoteOptionOut:
+    pr = _get_pricing_request(db, pricing_request_id)
+    line = _get_line(db, line_id)
+    try:
+        option = costing_workflow.add_quote_option(db, line, payload)
+    except costing_workflow.WorkflowError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return _to_option_out(db, pr, line, option)
+
+
+@router.get(
+    "/pricing-requests/{pricing_request_id}/lines/{line_id}/quote-options",
+    response_model=list[FactoryQuoteOptionOut],
+)
+def list_quote_options(
+    pricing_request_id: uuid.UUID, line_id: uuid.UUID, db: Session = Depends(get_db)
+) -> list[FactoryQuoteOptionOut]:
+    pr = _get_pricing_request(db, pricing_request_id)
+    line = _get_line(db, line_id)
+    options = db.scalars(
+        select(FactoryQuoteOption).where(FactoryQuoteOption.quote_line_id == line.id)
+    ).all()
+    return [_to_option_out(db, pr, line, opt) for opt in options]
+
+
+@router.post(
+    "/pricing-requests/{pricing_request_id}/lines/{line_id}/quote-options/{option_id}/select",
+    response_model=FactoryQuoteOptionOut,
+)
+def select_quote_option(
+    pricing_request_id: uuid.UUID,
+    line_id: uuid.UUID,
+    option_id: uuid.UUID,
+    db: Session = Depends(get_db),
+) -> FactoryQuoteOptionOut:
+    pr = _get_pricing_request(db, pricing_request_id)
+    line = _get_line(db, line_id)
+    option = db.get(FactoryQuoteOption, option_id)
+    if option is None:
+        raise HTTPException(status_code=404, detail="quote option not found")
+    try:
+        option = costing_workflow.select_quote_option(db, line, option)
+    except costing_workflow.WorkflowError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return _to_option_out(db, pr, line, option)
 
 
 @router.post(

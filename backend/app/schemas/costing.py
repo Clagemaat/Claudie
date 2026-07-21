@@ -19,6 +19,26 @@ class FactoryOut(BaseModel):
     contact_info: str | None
 
 
+class FactoryQuoteOptionCreate(BaseModel):
+    factory_id: uuid.UUID
+    quoted_price: float
+    currency: str
+    notes: str | None = None
+
+
+class FactoryQuoteOptionOut(BaseModel):
+    id: uuid.UUID
+    quote_line_id: uuid.UUID
+    factory_id: uuid.UUID
+    quoted_price: float
+    currency: str
+    notes: str | None
+    is_selected: bool
+    # Computed on the fly from the line's already-set hs_code/volume (once
+    # priced) - null until then, since comparison isn't required upfront.
+    landed_cost: float | None
+
+
 class QuoteLineRequestIn(BaseModel):
     color: str
     size: str
