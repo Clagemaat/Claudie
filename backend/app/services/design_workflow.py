@@ -38,6 +38,9 @@ def create_design_request(db: Session, project_id, payload: DesignRequestCreate)
         created_by_id=payload.created_by_id,
         subtype=payload.subtype,
         product_type_id=payload.product_type_id,
+        retailer_id=payload.retailer_id,
+        requested_deadline=payload.requested_deadline,
+        requested_colors=payload.requested_colors,
         status=DesignRequestStatus.SUBMITTED,
     )
     db.add(dr)

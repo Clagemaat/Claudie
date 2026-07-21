@@ -1,21 +1,23 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.core import Project
-from app.models.design import Comment, DesignRequest, TemplateVersion
+from app.models.design import Comment, DesignRequest, ReferenceMaterial, TemplateVersion
 from app.schemas.design import (
     DesignRequestCreate,
     DesignRequestDetailOut,
     DesignRequestOut,
+    ReferenceMaterialOut,
     ReviewDecisionRequest,
     SubmitForReviewRequest,
     TriageRequest,
 )
 from app.services import design_workflow
+from app.services.file_storage import storage
 
 router = APIRouter(tags=["design-requests"])
 
@@ -51,11 +53,42 @@ def get_design_request(
         .where(Comment.entity_type == design_workflow.ENTITY_TYPE, Comment.entity_id == dr.id)
         .order_by(Comment.created_at)
     ).all()
+    reference_materials = db.scalars(
+        select(ReferenceMaterial)
+        .where(ReferenceMaterial.design_request_id == dr.id)
+        .order_by(ReferenceMaterial.created_at)
+    ).all()
     return DesignRequestDetailOut(
         **DesignRequestOut.model_validate(dr).model_dump(),
         versions=versions,
         comments=comments,
+        reference_materials=reference_materials,
     )
+
+
+@router.post(
+    "/design-requests/{design_request_id}/reference-materials",
+    response_model=ReferenceMaterialOut,
+)
+async def upload_reference_material(
+    design_request_id: uuid.UUID,
+    uploaded_by_id: uuid.UUID = Form(...),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+) -> ReferenceMaterial:
+    _get_design_request(db, design_request_id)
+    content = await file.read()
+    file_url = storage.save(file.filename, content)
+    material = ReferenceMaterial(
+        design_request_id=design_request_id,
+        file_url=file_url,
+        original_filename=file.filename,
+        uploaded_by_id=uploaded_by_id,
+    )
+    db.add(material)
+    db.commit()
+    db.refresh(material)
+    return material
 
 
 @router.post("/design-requests/{design_request_id}/triage", response_model=DesignRequestOut)

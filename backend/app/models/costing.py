@@ -1,6 +1,7 @@
 import uuid
+from datetime import date
 
-from sqlalchemy import JSON, Boolean, Enum, ForeignKey, Numeric, String, Text
+from sqlalchemy import JSON, Boolean, Date, Enum, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, UUIDPKMixin
@@ -32,6 +33,9 @@ class PricingRequest(Request):
     assigned_costing_user_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("users.id"), nullable=True
     )
+    # Requirements from sales, not decisions costing makes.
+    requested_delivery_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    requested_quote_validity_until: Mapped[date | None] = mapped_column(Date, nullable=True)
     # Derived from the completion state of its QuoteLines, but persisted for
     # cheap listing/filtering.
     status: Mapped[PricingRequestStatus] = mapped_column(
@@ -70,9 +74,16 @@ class QuoteLine(Base, UUIDPKMixin, TimestampMixin):
     )
 
     # Costing inputs / calculated landed cost breakdown - populated once priced.
+    hs_code: Mapped[str | None] = mapped_column(String(20), nullable=True)
     purchase_price: Mapped[float | None] = mapped_column(Numeric(12, 2), nullable=True)
     purchase_currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
     fx_rate_to_eur: Mapped[float | None] = mapped_column(Numeric(12, 6), nullable=True)
+    # Box dimensions in centimeters - volume_cbm is derived from these x
+    # box_qty, not entered directly.
+    box_width_cm: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
+    box_length_cm: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
+    box_height_cm: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
+    box_qty: Mapped[int | None] = mapped_column(Integer, nullable=True)
     volume_cbm: Mapped[float | None] = mapped_column(Numeric(12, 4), nullable=True)
     freight_cost: Mapped[float | None] = mapped_column(Numeric(12, 2), nullable=True)
     duty_cost: Mapped[float | None] = mapped_column(Numeric(12, 2), nullable=True)

@@ -1,12 +1,13 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.core import Customer, Project
+from app.models.core import Customer, Project, Retailer
 from app.schemas.project import ProjectCreate, ProjectOut
-from app.schemas.user import CustomerCreate, CustomerOut
+from app.schemas.user import CustomerCreate, CustomerOut, RetailerCreate, RetailerOut
 
 router = APIRouter(tags=["projects"])
 
@@ -18,6 +19,24 @@ def create_customer(payload: CustomerCreate, db: Session = Depends(get_db)) -> C
     db.commit()
     db.refresh(customer)
     return customer
+
+
+@router.post("/customers/{customer_id}/retailers", response_model=RetailerOut)
+def create_retailer(
+    customer_id: uuid.UUID, payload: RetailerCreate, db: Session = Depends(get_db)
+) -> Retailer:
+    if db.get(Customer, customer_id) is None:
+        raise HTTPException(status_code=404, detail="customer not found")
+    retailer = Retailer(customer_id=customer_id, name=payload.name)
+    db.add(retailer)
+    db.commit()
+    db.refresh(retailer)
+    return retailer
+
+
+@router.get("/customers/{customer_id}/retailers", response_model=list[RetailerOut])
+def list_retailers(customer_id: uuid.UUID, db: Session = Depends(get_db)) -> list[Retailer]:
+    return db.scalars(select(Retailer).where(Retailer.customer_id == customer_id)).all()
 
 
 @router.post("/projects", response_model=ProjectOut)

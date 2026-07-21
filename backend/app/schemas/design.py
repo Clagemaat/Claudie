@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
@@ -15,6 +15,9 @@ from app.models.enums import (
 class DesignRequestCreate(BaseModel):
     subtype: DesignRequestSubtype
     product_type_id: uuid.UUID | None = None
+    retailer_id: uuid.UUID | None = None
+    requested_deadline: date | None = None
+    requested_colors: list[str] | None = None
     created_by_id: uuid.UUID
 
 
@@ -59,6 +62,16 @@ class CommentOut(BaseModel):
     created_at: datetime
 
 
+class ReferenceMaterialOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    file_url: str
+    original_filename: str
+    uploaded_by_id: uuid.UUID
+    created_at: datetime
+
+
 class DesignRequestOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -66,6 +79,9 @@ class DesignRequestOut(BaseModel):
     project_id: uuid.UUID
     subtype: DesignRequestSubtype
     product_type_id: uuid.UUID | None
+    retailer_id: uuid.UUID | None
+    requested_deadline: date | None
+    requested_colors: list[str] | None
     design_project_number: str | None
     lead_designer_id: uuid.UUID | None
     dtp_designer_id: uuid.UUID | None
@@ -79,3 +95,4 @@ class DesignRequestOut(BaseModel):
 class DesignRequestDetailOut(DesignRequestOut):
     versions: list[TemplateVersionOut] = []
     comments: list[CommentOut] = []
+    reference_materials: list[ReferenceMaterialOut] = []
