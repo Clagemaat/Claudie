@@ -4,7 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models.core import Project
-from app.models.costing import Factory, PricingRequest, QuoteLine
+from app.models.costing import Factory, FactoryQuoteOption, PricingRequest, QuoteLine
 from app.models.design import DesignRequest, TemplateVersion
 from app.models.enums import (
     PricingRequestSourceType,
@@ -19,6 +19,7 @@ from app.models.reference_data import DutyRate, ExchangeRate, FreightRate, Handl
 from app.schemas.costing import (
     AddLineRequest,
     ClaimRequest,
+    FactoryQuoteOptionCreate,
     OverrideLineRequest,
     PriceLineRequest,
     PricingRequestCreate,
@@ -346,6 +347,70 @@ def override_line(
     db.commit()
     db.refresh(line)
     return line
+
+
+def add_quote_option(
+    db: Session, line: QuoteLine, payload: FactoryQuoteOptionCreate
+) -> FactoryQuoteOption:
+    """Optional bookkeeping - logging a competing factory offer never
+    blocks or is required before pricing a line via price_line()."""
+    if db.get(Factory, payload.factory_id) is None:
+        raise WorkflowError("factory not found")
+
+    option = FactoryQuoteOption(
+        quote_line_id=line.id,
+        factory_id=payload.factory_id,
+        quoted_price=payload.quoted_price,
+        currency=payload.currency,
+        notes=payload.notes,
+    )
+    db.add(option)
+    db.commit()
+    db.refresh(option)
+    return option
+
+
+def select_quote_option(
+    db: Session, line: QuoteLine, option: FactoryQuoteOption
+) -> FactoryQuoteOption:
+    if option.quote_line_id != line.id:
+        raise WorkflowError("quote option does not belong to this line")
+
+    others = db.scalars(
+        select(FactoryQuoteOption).where(
+            FactoryQuoteOption.quote_line_id == line.id,
+            FactoryQuoteOption.id != option.id,
+        )
+    ).all()
+    for other in others:
+        other.is_selected = False
+    option.is_selected = True
+
+    db.commit()
+    db.refresh(option)
+    return option
+
+
+def estimate_option_landed_cost(
+    db: Session, pr: PricingRequest, line: QuoteLine, quoted_price: float, currency: str
+) -> float | None:
+    """Reuses the line's already-set hs_code/volume (from when it was
+    priced) to estimate what landed cost this competing offer would produce
+    - returns None if the line hasn't been priced yet, since box
+    dimensions/HS code aren't known until then."""
+    if line.hs_code is None or line.volume_cbm is None:
+        return None
+    product_type_id = _resolve_product_type_id(db, pr)
+    if product_type_id is None:
+        return None
+    try:
+        costs = _compute_landed_cost(
+            db, line.hs_code, product_type_id, line.production_location_id,
+            line.delivery_location_id, quoted_price, currency, float(line.volume_cbm),
+        )
+    except WorkflowError:
+        return None
+    return costs["landed_cost"]
 
 
 def get_margin_recommendation(db: Session, pr: PricingRequest) -> tuple[float | None, int]:
