@@ -63,6 +63,12 @@ class DesignRequest(Request):
     # Colors the DTP designer needs to design for - a flat list, not
     # individually tracked (they're delivered together in one PDF/version).
     requested_colors: Mapped[list[str] | None] = mapped_column(ARRAY(String), nullable=True)
+    # Free-text creative brief from sales, plus the size/materials the
+    # design needs to accommodate - capped at 4 materials (enforced in the
+    # Pydantic schema, not here) since a design isn't produced in more.
+    brief: Mapped[str | None] = mapped_column(Text, nullable=True)
+    product_size: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    materials: Mapped[list[str] | None] = mapped_column(ARRAY(String), nullable=True)
     status: Mapped[DesignRequestStatus] = mapped_column(
         Enum(DesignRequestStatus, name="design_request_status"),
         default=DesignRequestStatus.SUBMITTED,

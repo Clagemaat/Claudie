@@ -115,6 +115,9 @@ export interface DesignRequest extends WithId {
   retailer_id: string | null
   requested_deadline: string | null
   requested_colors: string[] | null
+  brief: string | null
+  product_size: string | null
+  materials: string[] | null
   design_project_number: string | null
   lead_designer_id: string | null
   dtp_designer_id: string | null
