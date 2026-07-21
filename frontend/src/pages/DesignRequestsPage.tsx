@@ -3,6 +3,7 @@ import { apiGet, apiPost, uploadFile } from '../api'
 import { useOptions } from '../useOptions'
 import { hasAnyRole, useSession } from '../session'
 import type {
+  Customer,
   DesignRequest,
   DesignRequestDetail as DesignRequestDetailType,
   DesignRequestSubtype,
@@ -11,6 +12,11 @@ import type {
   Retailer,
   User,
 } from '../types'
+
+function formatDate(value: string | null): string {
+  if (!value) return '—'
+  return new Date(value).toLocaleDateString()
+}
 
 interface DesignRequestsPageProps {
   focusId?: string | null
@@ -37,14 +43,37 @@ export function DesignRequestsPage({ focusId, onFocusHandled }: DesignRequestsPa
 function DesignRequestList({ onOpen }: { onOpen: (id: string) => void }) {
   const { user } = useSession()
   const [requests, setRequests] = useState<DesignRequest[]>([])
+  const [projects, setProjects] = useState<Project[]>([])
+  const [customers, setCustomers] = useState<Customer[]>([])
+  const [retailers, setRetailers] = useState<Retailer[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
 
-  const load = async () => setRequests(await apiGet<DesignRequest[]>('/design-requests'))
+  const load = async () => {
+    const [reqs, projs, custs, rets] = await Promise.all([
+      apiGet<DesignRequest[]>('/design-requests'),
+      apiGet<Project[]>('/projects'),
+      apiGet<Customer[]>('/customers'),
+      apiGet<Retailer[]>('/retailers'),
+    ])
+    setRequests(reqs)
+    setProjects(projs)
+    setCustomers(custs)
+    setRetailers(rets)
+  }
 
   useEffect(() => {
     load().finally(() => setLoading(false))
   }, [])
+
+  const projectById = new Map(projects.map((p) => [p.id, p]))
+  const customerNameById = new Map(customers.map((c) => [c.id, c.name]))
+  const retailerNameById = new Map(retailers.map((r) => [r.id, r.name]))
+
+  const customerNameFor = (r: DesignRequest) => {
+    const project = projectById.get(r.project_id)
+    return project ? customerNameById.get(project.customer_id) ?? '—' : '—'
+  }
 
   return (
     <section className="entity-manager">
@@ -71,8 +100,12 @@ function DesignRequestList({ onOpen }: { onOpen: (id: string) => void }) {
           <thead>
             <tr>
               <th>Subtype</th>
-              <th>Status</th>
+              <th>Customer</th>
+              <th>Retailer</th>
               <th>Project #</th>
+              <th>Due date</th>
+              <th>Submitted</th>
+              <th>Status</th>
               <th></th>
             </tr>
           </thead>
@@ -80,8 +113,12 @@ function DesignRequestList({ onOpen }: { onOpen: (id: string) => void }) {
             {requests.map((r) => (
               <tr key={r.id}>
                 <td>{r.subtype}</td>
-                <td>{r.status}</td>
+                <td>{customerNameFor(r)}</td>
+                <td>{r.retailer_id ? retailerNameById.get(r.retailer_id) ?? '—' : '—'}</td>
                 <td>{r.design_project_number ?? '—'}</td>
+                <td>{formatDate(r.requested_deadline)}</td>
+                <td>{formatDate(r.created_at)}</td>
+                <td>{r.status}</td>
                 <td>
                   <button type="button" onClick={() => onOpen(r.id)}>
                     Open
