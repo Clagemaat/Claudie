@@ -4,10 +4,13 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.core import Location, ProductType
+from app.models.ops import EscalationRule, SLADefinition
 from app.models.reference_data import DutyRate, ExchangeRate, FreightRate, HandlingCost
 from app.schemas.reference_data import (
     DutyRateCreate,
     DutyRateOut,
+    EscalationRuleCreate,
+    EscalationRuleOut,
     ExchangeRateCreate,
     ExchangeRateOut,
     FreightRateCreate,
@@ -18,6 +21,8 @@ from app.schemas.reference_data import (
     LocationOut,
     ProductTypeCreate,
     ProductTypeOut,
+    SLADefinitionCreate,
+    SLADefinitionOut,
 )
 
 router = APIRouter(tags=["reference-data"])
@@ -109,3 +114,35 @@ def create_handling_cost(
 @router.get("/handling-costs", response_model=list[HandlingCostOut])
 def list_handling_costs(db: Session = Depends(get_db)) -> list[HandlingCost]:
     return db.scalars(select(HandlingCost)).all()
+
+
+@router.post("/sla-definitions", response_model=SLADefinitionOut)
+def create_sla_definition(
+    payload: SLADefinitionCreate, db: Session = Depends(get_db)
+) -> SLADefinition:
+    sla = SLADefinition(**payload.model_dump())
+    db.add(sla)
+    db.commit()
+    db.refresh(sla)
+    return sla
+
+
+@router.get("/sla-definitions", response_model=list[SLADefinitionOut])
+def list_sla_definitions(db: Session = Depends(get_db)) -> list[SLADefinition]:
+    return db.scalars(select(SLADefinition)).all()
+
+
+@router.post("/escalation-rules", response_model=EscalationRuleOut)
+def create_escalation_rule(
+    payload: EscalationRuleCreate, db: Session = Depends(get_db)
+) -> EscalationRule:
+    rule = EscalationRule(**payload.model_dump())
+    db.add(rule)
+    db.commit()
+    db.refresh(rule)
+    return rule
+
+
+@router.get("/escalation-rules", response_model=list[EscalationRuleOut])
+def list_escalation_rules(db: Session = Depends(get_db)) -> list[EscalationRule]:
+    return db.scalars(select(EscalationRule)).all()
