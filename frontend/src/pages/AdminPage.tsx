@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { UsersPage } from './UsersPage'
-import { CustomersPage } from './CustomersPage'
 import { LocationsPage } from './LocationsPage'
 import { ProductTypesPage } from './ProductTypesPage'
 import { FactoriesPage } from './FactoriesPage'
@@ -13,7 +12,6 @@ import { EscalationRulesPage } from './EscalationRulesPage'
 
 const SECTIONS = [
   { key: 'users', label: 'Users', Component: UsersPage },
-  { key: 'customers', label: 'Customers & Retailers', Component: CustomersPage },
   { key: 'locations', label: 'Locations', Component: LocationsPage },
   { key: 'product-types', label: 'Product Types', Component: ProductTypesPage },
   { key: 'factories', label: 'Factories', Component: FactoriesPage },
