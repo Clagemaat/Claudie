@@ -12,6 +12,7 @@ from app.schemas.design import (
     DesignRequestDetailOut,
     DesignRequestOut,
     ReferenceMaterialOut,
+    ReopenForRevisionRequest,
     ReviewDecisionRequest,
     SubmitForReviewRequest,
     TriageRequest,
@@ -122,5 +123,18 @@ def review_design_request(
     dr = _get_design_request(db, design_request_id)
     try:
         return design_workflow.review_decision(db, dr, payload)
+    except design_workflow.WorkflowError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post(
+    "/design-requests/{design_request_id}/reopen-for-revision", response_model=DesignRequestOut
+)
+def reopen_design_request_for_revision(
+    design_request_id: uuid.UUID, payload: ReopenForRevisionRequest, db: Session = Depends(get_db)
+) -> DesignRequest:
+    dr = _get_design_request(db, design_request_id)
+    try:
+        return design_workflow.reopen_for_revision(db, dr, payload)
     except design_workflow.WorkflowError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
