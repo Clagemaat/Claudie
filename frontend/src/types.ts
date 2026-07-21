@@ -216,6 +216,40 @@ export interface MarginRecommendation {
   based_on_count: number
 }
 
+export type OrderStatus = 'pending_item_creation' | 'ready'
+export type ItemCreationStatus = 'pending' | 'done'
+
+export interface OrderLine extends WithId {
+  order_id: string
+  quote_line_id: string
+  quantity_ordered: number
+  item_creation_request_id: string | null
+}
+
+export interface Order extends WithId {
+  project_id: string
+  customer_id: string
+  created_by_id: string
+  status: OrderStatus
+  created_at: string
+  updated_at: string
+}
+
+export interface OrderDetail extends Order {
+  lines: OrderLine[]
+}
+
+export interface ItemCreationRequest extends WithId {
+  design_request_id: string
+  color: string
+  size: string
+  status: ItemCreationStatus
+  assigned_item_creator_id: string | null
+  erp_item_number: string | null
+  created_at: string
+  completed_at: string | null
+}
+
 // Known (entity_type, step_name) pairs a Task can actually be created with -
 // keeping this a dropdown (rather than free text) avoids SLA/escalation
 // rules silently never matching anything due to a typo.
