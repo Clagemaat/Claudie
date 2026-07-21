@@ -9,6 +9,7 @@ from app.routers import (
     costing,
     design_requests,
     fulfillment,
+    ops,
     projects,
     reference_data,
     tasks,
@@ -24,6 +25,7 @@ app.include_router(tasks.router)
 app.include_router(reference_data.router)
 app.include_router(costing.router)
 app.include_router(fulfillment.router)
+app.include_router(ops.router)
 
 # Uploaded reference materials (see app.services.file_storage) are served
 # back from here - swap for a real object store URL scheme later.

@@ -1,7 +1,9 @@
 import uuid
-from datetime import date
+from datetime import date, timedelta
 
 from pydantic import BaseModel, ConfigDict
+
+from app.models.enums import Role
 
 
 class LocationCreate(BaseModel):
@@ -82,3 +84,41 @@ class HandlingCostOut(BaseModel):
     id: uuid.UUID
     product_type_id: uuid.UUID
     cost: float
+
+
+class SLADefinitionCreate(BaseModel):
+    entity_type: str
+    step_name: str
+    duration: timedelta
+    reminder_frequency: timedelta
+
+
+class SLADefinitionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    entity_type: str
+    step_name: str
+    duration: timedelta
+    reminder_frequency: timedelta
+
+
+class EscalationRuleCreate(BaseModel):
+    entity_type: str
+    step_name: str
+    threshold_after_due: timedelta
+    escalate_to_role: Role | None = None
+    escalate_to_user_id: uuid.UUID | None = None
+    notify_message_template: str
+
+
+class EscalationRuleOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    entity_type: str
+    step_name: str
+    threshold_after_due: timedelta
+    escalate_to_role: Role | None
+    escalate_to_user_id: uuid.UUID | None
+    notify_message_template: str
