@@ -30,7 +30,7 @@ class FreightRate(Base, UUIDPKMixin):
 class DutyRate(Base, UUIDPKMixin):
     __tablename__ = "duty_rates"
 
-    product_type_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("product_types.id"))
+    hs_code: Mapped[str] = mapped_column(String(20))
     destination_location_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("locations.id")
     )

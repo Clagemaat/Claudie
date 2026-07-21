@@ -23,6 +23,9 @@ htmlcov/
 # Environment variables
 .env
 
+# Local file storage (uploaded reference materials)
+backend/uploads/
+
 # IDE
 .vscode/
 .idea/

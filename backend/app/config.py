@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     database_url: str = (
         "postgresql+psycopg://claudie:claudie@localhost:5432/claudie_dev"
     )
+    upload_dir: str = "uploads"
 
 
 settings = Settings()

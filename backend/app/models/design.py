@@ -1,6 +1,7 @@
 import uuid
+from datetime import date
 
-from sqlalchemy import Enum, ForeignKey, String, Text
+from sqlalchemy import ARRAY, Date, Enum, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, UUIDPKMixin
@@ -55,6 +56,13 @@ class DesignRequest(Request):
     dtp_designer_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("users.id"), nullable=True
     )
+    retailer_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("retailers.id"), nullable=True
+    )
+    requested_deadline: Mapped[date | None] = mapped_column(Date, nullable=True)
+    # Colors the DTP designer needs to design for - a flat list, not
+    # individually tracked (they're delivered together in one PDF/version).
+    requested_colors: Mapped[list[str] | None] = mapped_column(ARRAY(String), nullable=True)
     status: Mapped[DesignRequestStatus] = mapped_column(
         Enum(DesignRequestStatus, name="design_request_status"),
         default=DesignRequestStatus.SUBMITTED,
@@ -77,10 +85,28 @@ class DesignRequest(Request):
         back_populates="design_request",
         foreign_keys="TemplateVersion.design_request_id",
     )
+    reference_materials: Mapped[list["ReferenceMaterial"]] = relationship(
+        back_populates="design_request"
+    )
 
     __mapper_args__ = {
         "polymorphic_identity": RequestCategory.DESIGN,
     }
+
+
+class ReferenceMaterial(Base, UUIDPKMixin, TimestampMixin):
+    """A file (logo, brand asset, inspiration image, ...) attached to a
+    design request by sales at submission time - a request can have any
+    number of these."""
+
+    __tablename__ = "reference_materials"
+
+    design_request_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("design_requests.id"))
+    file_url: Mapped[str] = mapped_column(String(1024))
+    original_filename: Mapped[str] = mapped_column(String(255))
+    uploaded_by_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+
+    design_request: Mapped["DesignRequest"] = relationship(back_populates="reference_materials")
 
 
 class TemplateVersion(Base, UUIDPKMixin, TimestampMixin):

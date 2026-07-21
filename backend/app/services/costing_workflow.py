@@ -69,6 +69,8 @@ def create_pricing_request(
         template_version_id=payload.template_version_id,
         product_type_id=payload.product_type_id,
         questions=payload.questions,
+        requested_delivery_date=payload.requested_delivery_date,
+        requested_quote_validity_until=payload.requested_quote_validity_until,
         status=PricingRequestStatus.OPEN,
     )
     db.add(pr)
@@ -137,8 +139,13 @@ def add_line(db: Session, pr: PricingRequest, payload: AddLineRequest) -> QuoteL
     return line
 
 
+def _compute_volume_cbm(width_cm: float, length_cm: float, height_cm: float, qty: int) -> float:
+    return (float(width_cm) * float(length_cm) * float(height_cm) / 1_000_000) * int(qty)
+
+
 def _compute_landed_cost(
     db: Session,
+    hs_code: str,
     product_type_id: uuid.UUID,
     production_location_id: uuid.UUID,
     delivery_location_id: uuid.UUID,
@@ -167,12 +174,12 @@ def _compute_landed_cost(
 
     duty_rate = db.scalar(
         select(DutyRate).where(
-            DutyRate.product_type_id == product_type_id,
+            DutyRate.hs_code == hs_code,
             DutyRate.destination_location_id == delivery_location_id,
         )
     )
     if duty_rate is None:
-        raise WorkflowError("no duty rate configured for this product type/destination")
+        raise WorkflowError(f"no duty rate configured for HS code {hs_code} to this destination")
 
     handling = db.scalar(
         select(HandlingCost).where(HandlingCost.product_type_id == product_type_id)
@@ -231,15 +238,23 @@ def price_line(
     if db.get(Factory, payload.factory_id) is None:
         raise WorkflowError("factory not found")
 
+    volume_cbm = _compute_volume_cbm(
+        payload.box_width_cm, payload.box_length_cm, payload.box_height_cm, payload.box_qty
+    )
     costs = _compute_landed_cost(
-        db, product_type_id, line.production_location_id, line.delivery_location_id,
-        payload.purchase_price, payload.purchase_currency, payload.volume_cbm,
+        db, payload.hs_code, product_type_id, line.production_location_id, line.delivery_location_id,
+        payload.purchase_price, payload.purchase_currency, volume_cbm,
     )
 
     line.factory_id = payload.factory_id
+    line.hs_code = payload.hs_code
     line.purchase_price = payload.purchase_price
     line.purchase_currency = payload.purchase_currency
-    line.volume_cbm = payload.volume_cbm
+    line.box_width_cm = payload.box_width_cm
+    line.box_length_cm = payload.box_length_cm
+    line.box_height_cm = payload.box_height_cm
+    line.box_qty = payload.box_qty
+    line.volume_cbm = volume_cbm
     _apply_costs_to_line(line, costs, payload.margin_pct)
 
     _recompute_pricing_request_status(db, pr)
@@ -262,12 +277,19 @@ def override_line(
         raise WorkflowError("actor must be a Sales Director")
 
     factory_id = payload.factory_id or line.factory_id
+    hs_code = payload.hs_code or line.hs_code
     purchase_price = payload.purchase_price if payload.purchase_price is not None else line.purchase_price
     purchase_currency = payload.purchase_currency or line.purchase_currency
-    volume_cbm = payload.volume_cbm if payload.volume_cbm is not None else line.volume_cbm
+    box_width_cm = payload.box_width_cm if payload.box_width_cm is not None else line.box_width_cm
+    box_length_cm = payload.box_length_cm if payload.box_length_cm is not None else line.box_length_cm
+    box_height_cm = payload.box_height_cm if payload.box_height_cm is not None else line.box_height_cm
+    box_qty = payload.box_qty if payload.box_qty is not None else line.box_qty
     margin_pct = payload.margin_pct if payload.margin_pct is not None else line.margin_pct
 
-    if None in (factory_id, purchase_price, purchase_currency, volume_cbm, margin_pct):
+    if None in (
+        factory_id, hs_code, purchase_price, purchase_currency,
+        box_width_cm, box_length_cm, box_height_cm, box_qty, margin_pct,
+    ):
         raise WorkflowError(
             "line must already be priced, or every field provided, before it can be overridden"
         )
@@ -276,7 +298,10 @@ def override_line(
     # JSON-serializable for the audit log or arithmetic-safe to mix with
     # plain floats - normalize to float as soon as they're resolved.
     purchase_price = float(purchase_price)
-    volume_cbm = float(volume_cbm)
+    box_width_cm = float(box_width_cm)
+    box_length_cm = float(box_length_cm)
+    box_height_cm = float(box_height_cm)
+    box_qty = int(box_qty)
     margin_pct = float(margin_pct)
 
     product_type_id = _resolve_product_type_id(db, pr)
@@ -289,14 +314,20 @@ def override_line(
         "sell_price": float(line.sell_price) if line.sell_price is not None else None,
     }
 
+    volume_cbm = _compute_volume_cbm(box_width_cm, box_length_cm, box_height_cm, box_qty)
     costs = _compute_landed_cost(
-        db, product_type_id, line.production_location_id, line.delivery_location_id,
+        db, hs_code, product_type_id, line.production_location_id, line.delivery_location_id,
         purchase_price, purchase_currency, volume_cbm,
     )
 
     line.factory_id = factory_id
+    line.hs_code = hs_code
     line.purchase_price = purchase_price
     line.purchase_currency = purchase_currency
+    line.box_width_cm = box_width_cm
+    line.box_length_cm = box_length_cm
+    line.box_height_cm = box_height_cm
+    line.box_qty = box_qty
     line.volume_cbm = volume_cbm
     _apply_costs_to_line(line, costs, margin_pct)
 

@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict
 
@@ -43,9 +43,14 @@ class QuoteLineOut(BaseModel):
     delivery_location_id: uuid.UUID
     status: QuoteLineStatus
     factory_id: uuid.UUID | None
+    hs_code: str | None
     purchase_price: float | None
     purchase_currency: str | None
     fx_rate_to_eur: float | None
+    box_width_cm: float | None
+    box_length_cm: float | None
+    box_height_cm: float | None
+    box_qty: int | None
     volume_cbm: float | None
     freight_cost: float | None
     duty_cost: float | None
@@ -61,6 +66,8 @@ class PricingRequestCreate(BaseModel):
     template_version_id: uuid.UUID | None = None
     product_type_id: uuid.UUID | None = None
     questions: dict | None = None
+    requested_delivery_date: date | None = None
+    requested_quote_validity_until: date | None = None
     lines: list[QuoteLineRequestIn]
 
 
@@ -73,6 +80,8 @@ class PricingRequestOut(BaseModel):
     template_version_id: uuid.UUID | None
     product_type_id: uuid.UUID | None
     questions: dict | None
+    requested_delivery_date: date | None
+    requested_quote_validity_until: date | None
     assigned_costing_user_id: uuid.UUID | None
     status: PricingRequestStatus
     created_by_id: uuid.UUID
@@ -91,18 +100,28 @@ class ClaimRequest(BaseModel):
 class PriceLineRequest(BaseModel):
     actor_id: uuid.UUID
     factory_id: uuid.UUID
+    hs_code: str
     purchase_price: float
     purchase_currency: str
-    volume_cbm: float
+    # Box dimensions in centimeters - volume_cbm is derived from these, not
+    # entered directly.
+    box_width_cm: float
+    box_length_cm: float
+    box_height_cm: float
+    box_qty: int
     margin_pct: float
 
 
 class OverrideLineRequest(BaseModel):
     actor_id: uuid.UUID
     factory_id: uuid.UUID | None = None
+    hs_code: str | None = None
     purchase_price: float | None = None
     purchase_currency: str | None = None
-    volume_cbm: float | None = None
+    box_width_cm: float | None = None
+    box_length_cm: float | None = None
+    box_height_cm: float | None = None
+    box_qty: int | None = None
     margin_pct: float | None = None
 
 

@@ -57,7 +57,7 @@ class FreightRateOut(BaseModel):
 
 
 class DutyRateCreate(BaseModel):
-    product_type_id: uuid.UUID
+    hs_code: str
     destination_location_id: uuid.UUID
     rate_pct: float
 
@@ -66,7 +66,7 @@ class DutyRateOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    product_type_id: uuid.UUID
+    hs_code: str
     destination_location_id: uuid.UUID
     rate_pct: float
 

@@ -13,6 +13,17 @@ class Customer(Base, UUIDPKMixin, TimestampMixin):
     name: Mapped[str] = mapped_column(String(255))
 
 
+class Retailer(Base, UUIDPKMixin, TimestampMixin):
+    """A retail chain/store a design is being made for - distinct from
+    Customer, since one customer (e.g. an agency) can place designs for
+    several different retailers."""
+
+    __tablename__ = "retailers"
+
+    customer_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("customers.id"))
+    name: Mapped[str] = mapped_column(String(255))
+
+
 class ProductType(Base, UUIDPKMixin):
     __tablename__ = "product_types"
 
